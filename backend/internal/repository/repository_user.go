@@ -11,6 +11,9 @@ import (
 // ErrNotFound 哨兵错误。
 var ErrNotFound = errors.New("record not found")
 
+// ErrConflict 哨兵错误：状态已被并发请求先行改变，当前操作不能再修改。
+var ErrConflict = errors.New("conflict: record already processed")
+
 // UserRepository 用户数据访问。
 type UserRepository struct {
 	db *gorm.DB
@@ -81,9 +84,9 @@ func (r *UserRepository) RankingTopService(limit int) ([]model.User, error) {
 // Stats 平台统计。
 func (r *UserRepository) Stats() (totalUsers int64, totalDonation float64, totalServiceHours float64, err error) {
 	var u struct {
-		TotalUsers  int64
-		TotalDon    float64
-		TotalHours  float64
+		TotalUsers int64
+		TotalDon   float64
+		TotalHours float64
 	}
 	if err := r.db.Model(&model.User{}).Where("role = ?", "user").
 		Select("COUNT(*) AS total_users, COALESCE(SUM(total_donation),0) AS total_don, COALESCE(SUM(service_hours),0) AS total_hours").

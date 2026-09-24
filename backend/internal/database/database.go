@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -48,5 +49,23 @@ func Connect(dsn string, maxOpen, maxIdle, connMaxLifetime, retryCount, retryInt
 	); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
+	if err := backfillUpdateStatus(db); err != nil {
+		return nil, fmt.Errorf("backfill project update status: %w", err)
+	}
 	return db, nil
+}
+
+// backfillUpdateStatus 把审核功能上线前发布的历史动态统一标记为已通过。
+// 这些动态此前已经公开展示，迁移后继续保留在公开详情中。幂等：只处理空状态的行。
+func backfillUpdateStatus(db *gorm.DB) error {
+	res := db.Model(&model.ProjectUpdate{}).
+		Where("status IS NULL OR status = ''").
+		Update("status", constants.UpdateApproved)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		slog.Info("backfilled historical project updates as approved", "count", res.RowsAffected)
+	}
+	return nil
 }

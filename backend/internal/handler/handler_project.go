@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/givetrack/givetrack/internal/model"
 	"github.com/givetrack/givetrack/internal/service"
 	"github.com/givetrack/givetrack/internal/util"
 )
@@ -38,7 +39,7 @@ func (h *ProjectHandler) List(c *gin.Context) {
 	})
 }
 
-// GetDetail 项目详情。
+// GetDetail 项目详情（公开）：动态仅含审核通过的。
 func (h *ProjectHandler) GetDetail(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -50,8 +51,27 @@ func (h *ProjectHandler) GetDetail(c *gin.Context) {
 		util.FailError(c, err)
 		return
 	}
-	// 捐赠列表脱敏
-	donationViews := make([]gin.H, 0, len(donations))
+	util.OK(c, gin.H{"project": project, "donations": h.donationViews(donations), "updates": updates})
+}
+
+// GetMyProjectDetail 组织查看自己的项目详情：动态包含待审核/已驳回及驳回原因。
+func (h *ProjectHandler) GetMyProjectDetail(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	project, donations, updates, err := h.projectSvc.GetDetailForOwner(c.GetUint("user_id"), uint(id))
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"project": project, "donations": h.donationViews(donations), "updates": updates})
+}
+
+// donationViews 捐赠列表脱敏。
+func (h *ProjectHandler) donationViews(donations []model.Donation) []gin.H {
+	views := make([]gin.H, 0, len(donations))
 	for _, d := range donations {
 		donorName := d.User.RealName
 		if donorName == "" {
@@ -60,7 +80,7 @@ func (h *ProjectHandler) GetDetail(c *gin.Context) {
 		if d.IsAnonymous {
 			donorName = "爱心人士"
 		}
-		donationViews = append(donationViews, gin.H{
+		views = append(views, gin.H{
 			"id":          d.ID,
 			"amount":      d.Amount,
 			"isAnonymous": d.IsAnonymous,
@@ -69,7 +89,7 @@ func (h *ProjectHandler) GetDetail(c *gin.Context) {
 			"donorName":   donorName,
 		})
 	}
-	util.OK(c, gin.H{"project": project, "donations": donationViews, "updates": updates})
+	return views
 }
 
 // Create 组织发布项目。
@@ -97,7 +117,17 @@ func (h *ProjectHandler) MyProjects(c *gin.Context) {
 	util.OK(c, gin.H{"projects": list})
 }
 
-// Updates 项目进展列表。
+// MyUpdates 组织查看自己名下全部项目动态（含待审核、已驳回及驳回原因）。
+func (h *ProjectHandler) MyUpdates(c *gin.Context) {
+	list, err := h.projectSvc.MyUpdates(c.GetUint("user_id"))
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"updates": list})
+}
+
+// Updates 项目动态列表（公开）：只返回审核通过的动态。
 func (h *ProjectHandler) Updates(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {

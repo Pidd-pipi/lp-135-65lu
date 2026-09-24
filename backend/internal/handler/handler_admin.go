@@ -51,6 +51,39 @@ func (h *AdminHandler) ReviewProject(c *gin.Context) {
 	util.OK(c, gin.H{"project": p})
 }
 
+// PendingUpdates 待审核项目动态。
+func (h *AdminHandler) PendingUpdates(c *gin.Context) {
+	list, err := h.adminSvc.PendingUpdates()
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"updates": list})
+}
+
+// ReviewUpdate 审核项目动态（通过/驳回，驳回需填写原因）。
+func (h *AdminHandler) ReviewUpdate(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid update id")
+		return
+	}
+	var req struct {
+		Status  string `json:"status" binding:"required"`
+		Comment string `json:"comment"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, 42200, err.Error())
+		return
+	}
+	u, err := h.adminSvc.ReviewUpdate(c.GetUint("user_id"), uint(id), req.Status, req.Comment)
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"update": u})
+}
+
 // PendingOrganizations 待审核组织。
 func (h *AdminHandler) PendingOrganizations(c *gin.Context) {
 	list, err := h.adminSvc.PendingOrganizations()

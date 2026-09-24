@@ -40,6 +40,8 @@ func FailError(c *gin.Context, err error) {
 		Fail(c, http.StatusUnauthorized, constants.CodeUnauthorized, err.Error())
 	case errors.Is(err, ErrForbidden):
 		Fail(c, http.StatusForbidden, constants.CodeForbidden, err.Error())
+	case errors.Is(err, repository.ErrConflict):
+		Fail(c, http.StatusConflict, constants.CodeConflict, err.Error())
 	default:
 		Fail(c, http.StatusBadRequest, constants.CodeBadRequest, err.Error())
 	}

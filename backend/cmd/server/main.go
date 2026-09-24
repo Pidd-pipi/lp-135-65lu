@@ -48,7 +48,7 @@ func main() {
 	projectSvc := service.NewProjectService(projectRepo, updateRepo, orgRepo, donationRepo, logger)
 	donationSvc := service.NewDonationService(db, donationRepo, projectRepo, userRepo, logger)
 	rankingSvc := service.NewRankingService(userRepo, logger)
-	adminSvc := service.NewAdminService(projectRepo, orgRepo, reviewRepo, logger)
+	adminSvc := service.NewAdminService(projectRepo, updateRepo, orgRepo, reviewRepo, logger)
 
 	engine := router.Setup(db, authSvc, projectSvc, donationSvc, rankingSvc, adminSvc, cfg, logger)
 

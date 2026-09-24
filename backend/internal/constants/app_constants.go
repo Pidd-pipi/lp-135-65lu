@@ -24,6 +24,13 @@ const (
 	ProjectCompleted = "completed"
 )
 
+// 项目动态审核状态
+const (
+	UpdatePending  = "pending"
+	UpdateApproved = "approved"
+	UpdateRejected = "rejected"
+)
+
 // 组织审核状态
 const (
 	OrgPending  = "pending"

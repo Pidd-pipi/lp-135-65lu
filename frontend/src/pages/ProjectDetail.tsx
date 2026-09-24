@@ -18,11 +18,19 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     if (id) loadProject();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id, user?.role]);
 
   const loadProject = async () => {
     try {
-      const response = await projectAPI.getProject(id!);
+      // 组织本人用 owner 接口：动态包含待审核/已驳回及驳回原因；其他访客只有已通过动态。
+      const response =
+        user?.role === 'org'
+          ? await projectAPI.getMyProject(id!).catch((e) => {
+              if (e?.response?.status === 403) return projectAPI.getProject(id!);
+              throw e;
+            })
+          : await projectAPI.getProject(id!);
       setProject(response.data.project);
       setDonations(response.data.donations);
       setUpdates(response.data.updates);
@@ -123,12 +131,43 @@ const ProjectDetail = () => {
                     <p className="text-gray-500 text-center py-8">暂无项目动态</p>
                   ) : (
                     updates.map((update) => (
-                      <div key={update.id} className="border-l-4 border-primary-200 pl-4">
-                        <h4 className="font-semibold text-gray-900">{update.title}</h4>
+                      <div
+                        key={update.id}
+                        className={`border-l-4 pl-4 ${
+                          update.status === 'rejected'
+                            ? 'border-red-300'
+                            : update.status === 'pending'
+                            ? 'border-amber-300'
+                            : 'border-primary-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h4 className="font-semibold text-gray-900">{update.title}</h4>
+                          {update.status === 'pending' && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                              待审核
+                            </span>
+                          )}
+                          {update.status === 'rejected' && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                              已驳回
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 mb-2">
                           {new Date(update.createdAt).toLocaleDateString()}
                         </p>
                         <p className="text-gray-600">{update.content}</p>
+                        {update.status === 'rejected' && update.reviewComment && (
+                          <p className="mt-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                            驳回原因：{update.reviewComment}
+                          </p>
+                        )}
+                        {update.status === 'pending' && (
+                          <p className="mt-2 text-sm text-amber-700">
+                            动态提交后需平台管理员审核，通过后才会公开展示。
+                          </p>
+                        )}
                       </div>
                     ))
                   )}

@@ -50,7 +50,7 @@ const CreateUpdate = () => {
         ...formData,
         images: [],
       });
-      alert('动态发布成功');
+      alert('动态已提交，等待管理员审核；通过后将在项目详情页公开展示');
       navigate(`/projects/${selectedProject}`);
     } catch (error: any) {
       alert(error.response?.data?.message || '发布失败，请重试');
@@ -69,7 +69,10 @@ const CreateUpdate = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">发布项目动态</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-4">发布项目动态</h1>
+      <p className="text-sm text-gray-500 mb-8">
+        动态提交后进入待审核状态，仅在您自己的项目中可见；管理员审核通过后才会在公开的项目详情中展示，驳回时会注明原因。
+      </p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
         <div>

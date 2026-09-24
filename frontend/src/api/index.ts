@@ -45,6 +45,8 @@ export const projectAPI = {
   getProject: (id: string) => api.get(`/projects/${id}`),
   createProject: (data: any) => api.post('/projects', data),
   getMyProjects: () => api.get('/projects/org/my'),
+  getMyProject: (id: string) => api.get(`/projects/org/my/${id}`),
+  getMyUpdates: () => api.get('/projects/org/my/updates'),
   getProjectUpdates: (projectId: string) => api.get(`/projects/${projectId}/updates`),
   createProjectUpdate: (projectId: string, data: any) => api.post(`/projects/${projectId}/updates`, data),
 };
@@ -64,6 +66,9 @@ export const rankingAPI = {
 export const adminAPI = {
   getPendingProjects: () => api.get('/admin/projects/pending'),
   reviewProject: (id: string, data: any) => api.post(`/admin/projects/${id}/review`, data),
+  getPendingUpdates: () => api.get('/admin/updates/pending'),
+  reviewUpdate: (id: string, data: { status: 'approved' | 'rejected'; comment: string }) =>
+    api.post(`/admin/updates/${id}/review`, data),
   getPendingOrganizations: () => api.get('/admin/organizations/pending'),
   reviewOrganization: (id: string, data: any) => api.post(`/admin/organizations/${id}/review`, data),
 };

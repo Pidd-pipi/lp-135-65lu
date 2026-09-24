@@ -22,8 +22,10 @@ const swaggerJSON = `{
     "/auth/profile": { "put": { "summary": "更新资料", "tags": ["auth"] } },
     "/projects": { "get": { "summary": "项目列表", "tags": ["project"] }, "post": { "summary": "发布项目", "tags": ["project"] } },
     "/projects/org/my": { "get": { "summary": "我的项目", "tags": ["project"] } },
-    "/projects/{id}": { "get": { "summary": "项目详情", "tags": ["project"] } },
-    "/projects/{id}/updates": { "get": { "summary": "项目进展", "tags": ["project"] }, "post": { "summary": "上传进展", "tags": ["project"] } },
+    "/projects/org/my/updates": { "get": { "summary": "我的全部动态（含待审核/已驳回及驳回原因）", "tags": ["project"] } },
+    "/projects/org/my/{id}": { "get": { "summary": "我的项目详情（含全部审核状态的动态）", "tags": ["project"] } },
+    "/projects/{id}": { "get": { "summary": "项目详情（仅含审核通过的动态）", "tags": ["project"] } },
+    "/projects/{id}/updates": { "get": { "summary": "项目进展（仅审核通过）", "tags": ["project"] }, "post": { "summary": "上传进展（提交后待审核）", "tags": ["project"] } },
     "/donations": { "post": { "summary": "捐款", "tags": ["donation"] } },
     "/donations/my": { "get": { "summary": "我的捐赠", "tags": ["donation"] } },
     "/donations/{id}/certificate": { "get": { "summary": "电子凭证", "tags": ["donation"] } },
@@ -32,6 +34,8 @@ const swaggerJSON = `{
     "/ranking/stats": { "get": { "summary": "平台统计", "tags": ["ranking"] } },
     "/admin/projects/pending": { "get": { "summary": "待审核项目", "tags": ["admin"] } },
     "/admin/projects/{id}/review": { "post": { "summary": "审核项目", "tags": ["admin"] } },
+    "/admin/updates/pending": { "get": { "summary": "待审核项目动态", "tags": ["admin"] } },
+    "/admin/updates/{id}/review": { "post": { "summary": "审核项目动态（驳回须填原因；并发时仅先到者生效，后到者返回409）", "tags": ["admin"] } },
     "/admin/organizations/pending": { "get": { "summary": "待审核组织", "tags": ["admin"] } },
     "/admin/organizations/{id}/review": { "post": { "summary": "审核组织", "tags": ["admin"] } }
   }

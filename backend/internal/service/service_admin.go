@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
@@ -13,13 +14,14 @@ import (
 // AdminService 平台审核服务。
 type AdminService struct {
 	projectRepo *repository.ProjectRepository
+	updateRepo  *repository.ProjectUpdateRepository
 	orgRepo     *repository.OrganizationRepository
 	reviewRepo  *repository.AdminReviewRepository
 	logger      *slog.Logger
 }
 
-func NewAdminService(projectRepo *repository.ProjectRepository, orgRepo *repository.OrganizationRepository, reviewRepo *repository.AdminReviewRepository, logger *slog.Logger) *AdminService {
-	return &AdminService{projectRepo: projectRepo, orgRepo: orgRepo, reviewRepo: reviewRepo, logger: logger}
+func NewAdminService(projectRepo *repository.ProjectRepository, updateRepo *repository.ProjectUpdateRepository, orgRepo *repository.OrganizationRepository, reviewRepo *repository.AdminReviewRepository, logger *slog.Logger) *AdminService {
+	return &AdminService{projectRepo: projectRepo, updateRepo: updateRepo, orgRepo: orgRepo, reviewRepo: reviewRepo, logger: logger}
 }
 
 // PendingProjects 待审核项目列表。
@@ -53,6 +55,31 @@ func (s *AdminService) ReviewProject(adminID, projectID uint, status, comment st
 	}
 	s.logger.Info("project reviewed", "projectId", projectID, "status", status)
 	return p, nil
+}
+
+// PendingUpdates 待审核项目动态列表。
+func (s *AdminService) PendingUpdates() ([]model.ProjectUpdate, error) {
+	return s.updateRepo.FindPending()
+}
+
+// ReviewUpdate 审核项目动态。
+//
+// 驳回必须填写原因；审核状态变更是数据库条件更新，
+// 两个管理员并发处理时先到的成功，后到的收到 repository.ErrConflict。
+func (s *AdminService) ReviewUpdate(adminID, updateID uint, status, comment string) (*model.ProjectUpdate, error) {
+	if status != constants.UpdateApproved && status != constants.UpdateRejected {
+		return nil, fmt.Errorf("invalid review status")
+	}
+	comment = strings.TrimSpace(comment)
+	if status == constants.UpdateRejected && comment == "" {
+		return nil, fmt.Errorf("rejection reason is required")
+	}
+	u, err := s.updateRepo.Review(updateID, adminID, status, comment)
+	if err != nil {
+		return nil, err
+	}
+	s.logger.Info("project update reviewed", "updateId", updateID, "status", status, "reviewerId", adminID)
+	return u, nil
 }
 
 // PendingOrganizations 待审核组织列表。

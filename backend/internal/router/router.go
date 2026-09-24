@@ -54,8 +54,10 @@ func Setup(
 	{
 		projects.GET("", projectHandler.List)
 		projects.GET("/org/my", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.MyProjects)
+		projects.GET("/org/my/updates", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.MyUpdates)
 		projects.POST("", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.Create)
 		projects.GET("/:id", projectHandler.GetDetail)
+		projects.GET("/org/my/:id", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.GetMyProjectDetail)
 		projects.GET("/:id/updates", projectHandler.Updates)
 		projects.POST("/:id/updates", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.CreateUpdate)
 	}
@@ -78,6 +80,8 @@ func Setup(
 	{
 		admin.GET("/projects/pending", adminHandler.PendingProjects)
 		admin.POST("/projects/:id/review", adminHandler.ReviewProject)
+		admin.GET("/updates/pending", adminHandler.PendingUpdates)
+		admin.POST("/updates/:id/review", adminHandler.ReviewUpdate)
 		admin.GET("/organizations/pending", adminHandler.PendingOrganizations)
 		admin.POST("/organizations/:id/review", adminHandler.ReviewOrganization)
 	}

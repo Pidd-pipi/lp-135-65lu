@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
 )
@@ -86,8 +87,8 @@ func Seed(db *gorm.DB) error {
 			}
 		}
 		updates := []*model.ProjectUpdate{
-			{ProjectID: 1, Title: "首批图书采购完成", Content: "已完成 3000 册图书采购，进入配送阶段。", Images: ""},
-			{ProjectID: 2, Title: "5 月探访活动顺利开展", Content: "本月完成 60 位老人探访。", Images: ""},
+			{ProjectID: 1, Title: "首批图书采购完成", Content: "已完成 3000 册图书采购，进入配送阶段。", Images: "", Status: constants.UpdateApproved},
+			{ProjectID: 2, Title: "5 月探访活动顺利开展", Content: "本月完成 60 位老人探访。", Images: "", Status: constants.UpdateApproved},
 		}
 		for _, u := range updates {
 			if err := db.Create(u).Error; err != nil {
