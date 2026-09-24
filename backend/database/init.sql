@@ -57,8 +57,13 @@ CREATE TABLE IF NOT EXISTS project_updates (
   title VARCHAR(200) NOT NULL,
   content TEXT,
   images TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'approved',
+  review_comment VARCHAR(255) DEFAULT '',
+  reviewer_id BIGINT UNSIGNED DEFAULT 0,
+  reviewed_at DATETIME(3) NULL,
   created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX idx_update_project (project_id)
+  INDEX idx_update_project (project_id),
+  INDEX idx_update_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS donations (

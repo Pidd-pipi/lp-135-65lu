@@ -31,6 +31,13 @@ const (
 	OrgRejected = "rejected"
 )
 
+// 项目动态审核状态
+const (
+	UpdatePending  = "pending"
+	UpdateApproved = "approved"
+	UpdateRejected = "rejected"
+)
+
 // 支付状态
 const (
 	PaymentSuccess = "success"

@@ -65,7 +65,7 @@ func (s *ProjectService) GetDetail(id uint) (ProjectWithProgress, []model.Donati
 	if err != nil {
 		return ProjectWithProgress{}, nil, nil, err
 	}
-	updates, err := s.updateRepo.ListByProject(id)
+	updates, err := s.updateRepo.ListApprovedByProject(id)
 	if err != nil {
 		return ProjectWithProgress{}, nil, nil, err
 	}
@@ -127,7 +127,7 @@ func (s *ProjectService) MyProjects(userID uint) ([]ProjectWithProgress, error) 
 	return out, nil
 }
 
-// CreateUpdate 上传项目执行进展。
+// CreateUpdate 上传项目执行进展（提交后进入待审核，不在公开页展示）。
 func (s *ProjectService) CreateUpdate(userID, projectID uint, title, content, images string) (*model.ProjectUpdate, error) {
 	p, err := s.projectRepo.FindByID(projectID)
 	if err != nil {
@@ -140,11 +140,42 @@ func (s *ProjectService) CreateUpdate(userID, projectID uint, title, content, im
 	if p.OrganizationID != org.ID {
 		return nil, fmt.Errorf("forbidden: not your project")
 	}
-	u := &model.ProjectUpdate{ProjectID: projectID, Title: title, Content: content, Images: images}
+	u := &model.ProjectUpdate{
+		ProjectID: projectID,
+		Title:     title,
+		Content:   content,
+		Images:    images,
+		Status:    constants.UpdatePending,
+	}
 	if err := s.updateRepo.Create(u); err != nil {
 		return nil, err
 	}
+	s.logger.Info("project update submitted for review", "updateId", u.ID, "projectId", projectID, "orgId", org.ID)
 	return u, nil
+}
+
+// ListApprovedUpdates 项目公开动态（仅审核通过），项目不存在时返回 ErrNotFound。
+func (s *ProjectService) ListApprovedUpdates(projectID uint) ([]model.ProjectUpdate, error) {
+	if _, err := s.projectRepo.FindByID(projectID); err != nil {
+		return nil, err
+	}
+	return s.updateRepo.ListApprovedByProject(projectID)
+}
+
+// ListMyProjectUpdates 组织查看自己项目的全部动态（含待审核/已驳回及审核意见）。
+func (s *ProjectService) ListMyProjectUpdates(userID, projectID uint) ([]model.ProjectUpdate, error) {
+	p, err := s.projectRepo.FindByID(projectID)
+	if err != nil {
+		return nil, err
+	}
+	org, err := s.orgRepo.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if p.OrganizationID != org.ID {
+		return nil, fmt.Errorf("forbidden: not your project")
+	}
+	return s.updateRepo.ListAllByProject(projectID)
 }
 
 // CreateProjectInput 项目创建入参。

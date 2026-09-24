@@ -62,6 +62,10 @@ export interface ProjectUpdate {
   title: string;
   content?: string;
   images?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewComment?: string;
+  reviewerId?: string;
+  reviewedAt?: string;
   createdAt: string;
 }
 

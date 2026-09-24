@@ -95,7 +95,8 @@ go run ./cmd/server
 | GET | /projects/:id | 项目详情+捐赠记录+进展 | - |
 | POST | /projects | 发布项目 | org |
 | GET | /projects/org/my | 我的项目 | org |
-| GET/POST | /projects/:id/updates | 项目进展 | org |
+| GET/POST | /projects/:id/updates | 项目公开动态（仅审核通过）/提交动态（org，提交后待审核） | JWT |
+| GET | /projects/:id/updates/mine | 本组织项目全部动态（含待审核/驳回原因） | org |
 | POST | /donations | 捐款并生成凭证 | JWT |
 | GET | /donations/my | 我的捐赠 | JWT |
 | GET | /donations/:id/certificate | 电子凭证 | JWT |
@@ -104,6 +105,8 @@ go run ./cmd/server
 | GET | /ranking/stats | 平台统计 | - |
 | GET | /admin/projects/pending | 待审核项目 | admin |
 | POST | /admin/projects/:id/review | 项目审核 | admin |
+| GET | /admin/updates/pending | 待审核项目动态 | admin |
+| POST | /admin/updates/:id/review | 动态审核（通过/驳回，驳回必须填写原因） | admin |
 | GET | /admin/organizations/pending | 待审核组织 | admin |
 | POST | /admin/organizations/:id/review | 组织审核 | admin |
 | GET | /healthz | 存活检查 | - |

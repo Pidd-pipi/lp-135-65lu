@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
@@ -10,6 +11,7 @@ import (
 
 // Seed 幂等种子数据。
 func Seed(db *gorm.DB) error {
+	var adminID uint
 	var adminCount int64
 	if err := db.Model(&model.User{}).Where("role = ?", "admin").Count(&adminCount).Error; err != nil {
 		return fmt.Errorf("count admin: %w", err)
@@ -20,6 +22,13 @@ func Seed(db *gorm.DB) error {
 			return fmt.Errorf("seed admin: %w", err)
 		}
 		slog.Info("seeded admin")
+		adminID = admin.ID
+	} else {
+		var admin model.User
+		if err := db.Where("role = ?", "admin").First(&admin).Error; err != nil {
+			return fmt.Errorf("find seeded admin: %w", err)
+		}
+		adminID = admin.ID
 	}
 	var orgCount int64
 	if err := db.Model(&model.User{}).Where("role = ?", "org").Count(&orgCount).Error; err != nil {
@@ -86,13 +95,28 @@ func Seed(db *gorm.DB) error {
 			}
 		}
 		updates := []*model.ProjectUpdate{
-			{ProjectID: 1, Title: "首批图书采购完成", Content: "已完成 3000 册图书采购，进入配送阶段。", Images: ""},
-			{ProjectID: 2, Title: "5 月探访活动顺利开展", Content: "本月完成 60 位老人探访。", Images: ""},
+			{ProjectID: 1, Title: "首批图书采购完成", Content: "已完成 3000 册图书采购，进入配送阶段。", Images: "", Status: "approved"},
+			{ProjectID: 2, Title: "5 月探访活动顺利开展", Content: "本月完成 60 位老人探访。", Images: "", Status: "approved"},
+			{ProjectID: 1, Title: "第二批书架安装完成", Content: "15 所学校书架已安装到位，等待图书上架。", Images: "", Status: "pending"},
 		}
 		for _, u := range updates {
 			if err := db.Create(u).Error; err != nil {
 				return fmt.Errorf("seed update: %w", err)
 			}
+		}
+		rejectedAt := time.Now().Add(-24 * time.Hour)
+		rejectedUpdate := &model.ProjectUpdate{
+			ProjectID:     1,
+			Title:         "阶段性财务简报",
+			Content:       "本月支出明细（材料不完整）。",
+			Images:        "",
+			Status:        "rejected",
+			ReviewComment: "缺少采购发票与接收清单，请补充完整凭证后重新提交。",
+			ReviewerID:    adminID,
+			ReviewedAt:    &rejectedAt,
+		}
+		if err := db.Create(rejectedUpdate).Error; err != nil {
+			return fmt.Errorf("seed rejected update: %w", err)
 		}
 		slog.Info("seeded demo data")
 	}

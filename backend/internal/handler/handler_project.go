@@ -97,15 +97,29 @@ func (h *ProjectHandler) MyProjects(c *gin.Context) {
 	util.OK(c, gin.H{"projects": list})
 }
 
-// Updates 项目进展列表。
+// Updates 项目公开动态列表（仅审核通过）。
 func (h *ProjectHandler) Updates(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
 		return
 	}
-	// 复用详情查询中的进展
-	_, _, updates, err := h.projectSvc.GetDetail(uint(id))
+	updates, err := h.projectSvc.ListApprovedUpdates(uint(id))
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"updates": updates})
+}
+
+// MyUpdates 组织查看自己项目的全部动态（含待审核/已驳回及驳回原因）。
+func (h *ProjectHandler) MyUpdates(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	updates, err := h.projectSvc.ListMyProjectUpdates(c.GetUint("user_id"), uint(id))
 	if err != nil {
 		util.FailError(c, err)
 		return

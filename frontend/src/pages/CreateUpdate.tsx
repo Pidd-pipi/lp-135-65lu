@@ -48,9 +48,9 @@ const CreateUpdate = () => {
     try {
       await projectAPI.createProjectUpdate(selectedProject, {
         ...formData,
-        images: [],
+        images: '',
       });
-      alert('动态发布成功');
+      alert('动态已提交，等待管理员审核。审核通过后将在项目公开展示。');
       navigate(`/projects/${selectedProject}`);
     } catch (error: any) {
       alert(error.response?.data?.message || '发布失败，请重试');
@@ -69,7 +69,8 @@ const CreateUpdate = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">发布项目动态</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">发布项目动态</h1>
+      <p className="text-gray-500 mb-8">提交后需经平台管理员审核，通过后才会在项目公开页展示；如被驳回，可在项目动态页查看驳回原因。</p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
         <div>

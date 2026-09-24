@@ -3,10 +3,14 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
 )
+
+// ErrConflict 状态冲突（如资源已被他人先处理）。
+var ErrConflict = errors.New("conflict: resource already processed")
 
 // ProjectRepository 项目数据访问。
 type ProjectRepository struct {
@@ -99,11 +103,63 @@ func (r *ProjectUpdateRepository) Create(u *model.ProjectUpdate) error {
 	return nil
 }
 
-func (r *ProjectUpdateRepository) ListByProject(projectID uint) ([]model.ProjectUpdate, error) {
+// ListApprovedByProject 项目公开动态（仅审核通过）。
+func (r *ProjectUpdateRepository) ListApprovedByProject(projectID uint) ([]model.ProjectUpdate, error) {
+	var list []model.ProjectUpdate
+	if err := r.db.Where("project_id = ? AND status = ?", projectID, "approved").
+		Order("created_at DESC").Find(&list).Error; err != nil {
+		return nil, fmt.Errorf("list approved project updates: %w", err)
+	}
+	return list, nil
+}
+
+// ListAllByProject 项目全部动态（组织自查，含待审核/已驳回）。
+func (r *ProjectUpdateRepository) ListAllByProject(projectID uint) ([]model.ProjectUpdate, error) {
 	var list []model.ProjectUpdate
 	if err := r.db.Where("project_id = ?", projectID).
 		Order("created_at DESC").Find(&list).Error; err != nil {
-		return nil, fmt.Errorf("list project updates: %w", err)
+		return nil, fmt.Errorf("list all project updates: %w", err)
 	}
 	return list, nil
+}
+
+// FindUpdateByID 按 ID 查询单条动态。
+func (r *ProjectUpdateRepository) FindUpdateByID(id uint) (*model.ProjectUpdate, error) {
+	var u model.ProjectUpdate
+	err := r.db.First(&u, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find project update by id: %w", err)
+	}
+	return &u, nil
+}
+
+// FindPendingUpdates 待审核动态（带项目与发起组织信息）。
+func (r *ProjectUpdateRepository) FindPendingUpdates() ([]model.ProjectUpdate, error) {
+	var list []model.ProjectUpdate
+	if err := r.db.Preload("Project").Preload("Project.Organization").
+		Where("status = ?", "pending").
+		Order("created_at DESC").Find(&list).Error; err != nil {
+		return nil, fmt.Errorf("find pending project updates: %w", err)
+	}
+	return list, nil
+}
+
+// ReviewIfPending 仅当动态仍为待审核时原子地写入审核结果。
+// 返回 reviewed=true 表示本次调用完成了状态变更；false 表示已被他人先处理。
+func (r *ProjectUpdateRepository) ReviewIfPending(id, reviewerID uint, status, comment string, reviewedAt time.Time) (bool, error) {
+	res := r.db.Model(&model.ProjectUpdate{}).
+		Where("id = ? AND status = ?", id, "pending").
+		Updates(map[string]interface{}{
+			"status":         status,
+			"review_comment": comment,
+			"reviewer_id":    reviewerID,
+			"reviewed_at":    reviewedAt,
+		})
+	if res.Error != nil {
+		return false, fmt.Errorf("review project update: %w", res.Error)
+	}
+	return res.RowsAffected == 1, nil
 }

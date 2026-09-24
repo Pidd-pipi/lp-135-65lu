@@ -70,13 +70,20 @@ export interface Donation {
   project?: Project;
 }
 
+export type UpdateReviewStatus = 'pending' | 'approved' | 'rejected';
+
 export interface ProjectUpdate {
   id: string;
   projectId: string;
   title: string;
   content?: string;
   images?: string;
+  status: UpdateReviewStatus;
+  reviewComment?: string;
+  reviewerId?: string;
+  reviewedAt?: string;
   createdAt: string;
+  project?: Project;
 }
 
 export interface RankingItem {

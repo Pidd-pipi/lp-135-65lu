@@ -57,6 +57,7 @@ func Setup(
 		projects.POST("", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.Create)
 		projects.GET("/:id", projectHandler.GetDetail)
 		projects.GET("/:id/updates", projectHandler.Updates)
+		projects.GET("/:id/updates/mine", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.MyUpdates)
 		projects.POST("/:id/updates", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.CreateUpdate)
 	}
 
@@ -78,6 +79,8 @@ func Setup(
 	{
 		admin.GET("/projects/pending", adminHandler.PendingProjects)
 		admin.POST("/projects/:id/review", adminHandler.ReviewProject)
+		admin.GET("/updates/pending", adminHandler.PendingUpdates)
+		admin.POST("/updates/:id/review", adminHandler.ReviewUpdate)
 		admin.GET("/organizations/pending", adminHandler.PendingOrganizations)
 		admin.POST("/organizations/:id/review", adminHandler.ReviewOrganization)
 	}
